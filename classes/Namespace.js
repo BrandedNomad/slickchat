@@ -8,7 +8,7 @@ class Namespace {
         this.endpoint = endpoint
     }
 
-    adRoom(roomObj){
+    addRoom(roomObj){
         this.rooms.push(roomObj)
     }
 }
