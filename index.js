@@ -27,6 +27,7 @@ const io = new Server(expressServer)
  */
 io.on("connection",(socket)=>{
     //build an array to send back with the img and endpoint for each NS
+    console.log(socket.handshake)
     let nameSpaceData = namespaces.map((namespace)=>{
         return {
             img:namespace.img,
@@ -42,19 +43,27 @@ namespaces.forEach((namespace)=>{
     const thisNameSpace = io.of(namespace.endpoint)
     thisNameSpace.on('connection',(nameSpaceSocket)=>{
 
+        //get username from client
+        const username =  nameSpaceSocket.handshake.query.username;
         //When da socket connects to on of the chatgroup namespaces
         //send that namespace group info back
         nameSpaceSocket.emit("nameSpaceRoomLoad",namespace.rooms);
         nameSpaceSocket.on('joinRoom',(roomToJoin)=>{
 
+            //get the room title of current room
+            //and then leave that room before joining another room
+            let roomToLeave = Array.from(nameSpaceSocket.rooms)[1]
+            //console.log(roomToLeave)
+            if(roomToLeave !== undefined) {
+                console.log("roomToLeave is undefined")
+                nameSpaceSocket.leave(roomToLeave)
+                updateUsersInRoom(namespace, roomToLeave)
+            }
 
-            //Join the room
+
+            //Join the rooms
             nameSpaceSocket.join(roomToJoin)
-           //Return the number of users in a room using the [ack] callback
-            let numberOfUsers = io.of(namespace.endpoint).adapter.rooms.get(roomToJoin).size
-            //numberOfUsersCallback(numberOfUsers)
-            io.of(namespace.endpoint).in(roomToJoin).emit('updateMembers',numberOfUsers)
-
+            updateUsersInRoom(namespace,roomToJoin)
             //retrieve chat history of the room
             //first we need to find the room object for this room
             const nsRoom = namespace.rooms.find((room)=>{
@@ -73,7 +82,7 @@ namespaces.forEach((namespace)=>{
             const fullMsg = {
                 text:msg.text,
                 time:Date.now(),
-                username:"charl",
+                username:username,
                 avatar:"https://via.placeholder.com/30"
             }
             //figure out which room it was sent from
@@ -89,7 +98,6 @@ namespaces.forEach((namespace)=>{
             })
 
             nsRoom.addMessage(fullMsg)
-            console.log(nsRoom)
             //forward the message to everyone in that room
             io.of(namespace.endpoint).to(roomTitle).emit("messageToClients",fullMsg)
         })
@@ -97,3 +105,18 @@ namespaces.forEach((namespace)=>{
 
 
 })
+
+function updateUsersInRoom(namespace, roomToJoin){
+    //Return the number of users in a room using the [ack] callback
+    let numberOfUsers = 0
+    try{
+        //if the room is empty the following method will return an error .size undefined
+        //so it needs to be called in a try catch block
+        numberOfUsers = io.of(namespace.endpoint).adapter.rooms.get(roomToJoin).size
+    }catch(error){
+        //
+    }
+
+    //numberOfUsersCallback(numberOfUsers)
+    io.of(namespace.endpoint).in(roomToJoin).emit('updateMembers',numberOfUsers)
+}

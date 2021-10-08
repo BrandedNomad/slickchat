@@ -2,7 +2,11 @@ function joinNameSpace(endpoint){
     //check if nameSpaceSocket is an actual socket, and if it is
     //first close the socket before creating a new one.
     if(nameSpaceSocket){
+        //check to see if it actually is a socket, if it is then cllose it.
         nameSpaceSocket.close();
+        //remove eventlistener before it is added again
+        //or it will be added multiple times
+        document.querySelector('#user-input').removeEventListener('submit',formSubmission)
     }
     //establishes a connection to the namespace provided
     nameSpaceSocket = io(`http://localhost:3000${endpoint}`)
@@ -26,7 +30,7 @@ function joinNameSpace(endpoint){
         let roomNodes = document.getElementsByClassName("room");
         Array.from(roomNodes).forEach((element)=>{
             element.addEventListener('click',(event)=>{
-                console.log("someone clicked on ", event.target.innerHTML)
+                joinRoom(element.innerText)
             })
         })
 
@@ -49,11 +53,13 @@ function joinNameSpace(endpoint){
     })
 
     //Sends messages to the server
-    document.querySelector('.message-form').addEventListener('submit',(event)=>{
-        event.preventDefault()
-        const newMessage = document.querySelector('#user-message').value;
-        nameSpaceSocket.emit('newMessageToServer',{text:newMessage})
-    })
+    document.querySelector('.message-form').addEventListener('submit',formSubmission)
+}
+
+function formSubmission(event){
+    event.preventDefault()
+    const newMessage = document.querySelector('#user-message').value;
+    nameSpaceSocket.emit('newMessageToServer',{text:newMessage})
 }
 
 function buildHTML(msg){

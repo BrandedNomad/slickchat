@@ -1,5 +1,12 @@
+const username = prompt("What is your username?")
+
 //used for establishing the initial connection
-const socket = io('http://localhost:3000')
+const socket = io('http://localhost:3000',{
+    //the query object is sent via
+    query:{
+        username
+    }
+});
 let nameSpaceSocket = ""
 
 
